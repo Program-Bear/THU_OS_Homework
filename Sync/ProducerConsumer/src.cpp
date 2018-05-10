@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <string>
 #include <cstdlib>
+#include <dispatch/dispatch.h>
 
 using namespace std;
 
@@ -14,7 +15,8 @@ using namespace std;
 
 int iflag = 0;
 int oflag = 0;
-sem_t empty, full, mutex;
+//sem_t empty, full, mutex;
+dispatch_semaphore_t mutex,empty,full;
 int empty_count, full_count;
 int data_num = 0;
 int num = 0;
@@ -42,16 +44,19 @@ void* producer(void* argv){
 
 	//printf("Producer %d waiting for EMPTY: %d\n", id, empty_count);
 	printf("%sSTART\n", indent);
-
-	sem_wait(&empty);
-	//printf("Producer %d Waiting for MUTEX\n", id);
+    
+    //sem_wait(&empty);
+    dispatch_semaphore_wait(empty, DISPATCH_TIME_FOREVER);
+	
+    //printf("Producer %d Waiting for MUTEX\n", id);
 	printf("%saEMPTY\n", indent);
 
-	sem_wait(&mutex);
+	//sem_wait(&mutex);
+    dispatch_semaphore_wait(mutex, DISPATCH_TIME_FOREVER);
 	//printf("Producer %d entered Critical\n", id);
 	printf("%saMUTEX\n", indent);
 
-	printf("%sENTER\n", indent);	
+	printf("%sENTER\n", indent);
 	
 	int time = rand()%SLEEP_SPAN;
 	//sleep(time);
@@ -71,11 +76,13 @@ void* producer(void* argv){
 	//printf("Producer %d exited Critical\n", id);
 	printf("%sEXIT\n", indent);
 	
-	sem_post(&mutex);
+    //sem_post(&mutex);
+    dispatch_semaphore_signal(mutex);
 	printf("%srMUTEX\n", indent);	
 	//printf("Producer %d released MUTEX\n", id);
 
-	sem_post(&full);
+    //sem_post(&full);
+	dispatch_semaphore_signal(full);
 	printf("%srFULL\n", indent);
 	//printf("Producer %d released FULL: %d\n", id, full_count);
 
@@ -88,16 +95,20 @@ void* consumer(void* argv){
 	const char* indent = arg.indent.c_str();
 
 	sleep(arg.start);
-
+    
 	//printf("Consumer %d Waiting for FULL: %d\n", id, full_count);
 	printf("%sSTART\n", indent);
 
-	sem_wait(&full);
-	//printf("Consumer %d Waiting for MUTEX\n", id);
+	//sem_wait(&full);
+	dispatch_semaphore_wait(full, DISPATCH_TIME_FOREVER);
+    
+    //printf("Consumer %d Waiting for MUTEX\n", id);
 	printf("%saFULL\n", indent);
 
-	sem_wait(&mutex);
-	printf("%saMUTEX\n", indent);
+	//sem_wait(&mutex);
+	dispatch_semaphore_wait(mutex, DISPATCH_TIME_FOREVER);
+    
+    printf("%saMUTEX\n", indent);
 
 	//printf("Consumer %d entered Critical\n", id);
 	printf("%sENTER\n", indent);	
@@ -121,12 +132,16 @@ void* consumer(void* argv){
 	//printf("Consumer %d exited Critical\n", id);
 	printf("%sEXIT\n", indent);
 	
-	sem_post(&mutex);
-	//printf("Consumer %d released MUTEX\n", id);
+	//sem_post(&mutex);
+	dispatch_semaphore_signal(mutex);
+    
+    //printf("Consumer %d released MUTEX\n", id);
 	printf("%srMUTEX\n", indent);
 
-	sem_post(&empty);
-	//printf("Consumer %d released EMPTY: %d\n", id, empty_count);
+	//sem_post(&empty);
+	dispatch_semaphore_signal(empty);
+    
+    //printf("Consumer %d released EMPTY: %d\n", id, empty_count);
 	printf("%srEMPTY\n", indent);
 
 	return NULL;
@@ -137,10 +152,14 @@ int main(int argc, char** argv) {
 
 	memset(buffer, 0, sizeof(int) * BUFFER_SIZE);
 
-	sem_init(&mutex, 0, 1);
-	sem_init(&empty, 0, BUFFER_SIZE);
-	sem_init(&full, 0, 0);
-
+//	sem_open(&mutex, 0, 1);
+//	sem_open(&empty, 0, BUFFER_SIZE);
+//	sem_open(&full, 0, 0);
+    
+    mutex = dispatch_semaphore_create(1);
+    empty = dispatch_semaphore_create(BUFFER_SIZE);
+    full  = dispatch_semaphore_create(0);
+    
 	empty_count = BUFFER_SIZE;
 	full_count = 0;
 
