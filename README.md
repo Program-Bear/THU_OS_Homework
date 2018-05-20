@@ -14,7 +14,8 @@ The Homework assigned in THU Operating System Course
 
 同步互斥：
 第17讲同步互斥 -> SoftwareSynchronous（各类软件同步算法的正误判断）
-第18讲信号量与管程 -> Sync（c实现 40个同步互斥问题）
+第18讲信号量与管程 -> Sync（c实现 40个同步互斥问题）:
+    
 第20讲死锁 -> Bank（java实现 死锁检测算法——银行家算法）
 第20讲进程通信 -> Signal（c实现 一个进程通信的小实验）
 
